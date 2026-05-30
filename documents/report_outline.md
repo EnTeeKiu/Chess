@@ -1,79 +1,90 @@
-# COMP1020 OOP & Data Structures — Final Report Outline
+# COMP1020 OOP & Data Structures — Report Outline (Poster-Ready)
 **Course:** COMP1020 Object-Oriented Programming & Data Structures, Spring 2026  
-**Project:** Chess Game with AI Opponents (Java Swing)  
-**Deadline:** 11:59 PM, June 2, 2026  
-**Max Pages:** 10 (excluding References & Appendix)
+**Project:** Chess Plus — Chess Game with AI Opponents (Java Swing)  
+**Team:** Group 17  
+**Members:** Nguyen Quy Tu (Leader), Nguyen Dinh Nam Khanh, Nguyen Thien Quang, Bui Anh Minh, Nguyen Minh Nghia
+
+> This outline is derived from the **final submitted report** (`Group_17_Oriented_Object_Programming copy.pdf`).  
+> It is organised around the **6 required poster sections**: Introduction, Objective & Features, System Architecture, Implementation & Results, Challenges, and References.
 
 ---
 
-## 1. Introduction and Project Overview
+## 1. Introduction
 
 ### 1.1 Problem Statement and Motivation
-- Chess is one of the most complex two-player strategy games, with an enormous search space (~10¹²⁰ possible games). Building a playable chess engine that enforces all rules correctly and provides scalable AI opponents is a rich software engineering challenge.
-- Motivation: apply OOP design principles and algorithmic thinking (Minimax, Alpha-Beta Pruning) to a real, interactive application.
+- Chess is a highly complex two-player strategy game with an estimated 10¹²⁰ possible game sequences.
+- A digital chess engine must correctly enforce intricate rules while supporting efficient AI decision-making within practical response times.
+- This makes chess an effective platform for demonstrating Object-Oriented Programming, data structures, and algorithmic problem solving.
 
-### 1.2 Project Objectives and Scope
-- **Primary objective:** Develop a fully functional, rule-complete chess game in Java with a graphical user interface (Swing).
-- **AI objective:** Implement four AI bots of differing difficulties using game-tree search algorithms with progressively advanced evaluation heuristics.
-- **Scope:**
-  - Standard chess rules: legal piece movement, check/checkmate/stalemate detection, castling, en passant, pawn promotion.
-  - Two game modes: Human vs. Human (local), Human vs. Bot (single-player).
-  - Bot difficulty levels: Beginner (depth 3, material only), Amateur (depth 5, material only), Intermediate (depth 6, material + Piece-Square Tables), Hard (depth 6, material + Piece-Square Tables + Quiescence Search).
-
-### 1.3 Key Features and Functionalities
-- Interactive 8×8 chess board rendered with Java Swing (`ChessBoardUI`).
-- Drag-and-drop piece movement with real-time legal move highlighting (green dots / red ring for captures).
-- Board explicitly drawn with algebraic coordinates (Ranks 1-8, Files a-h).
-- Tabular move log panel displaying real-time algebraic chess notation.
-- Undo move functionality (Memento Pattern with double-undo in single-player to revert both bot and human moves).
-- Surrender button for graceful game end.
-- New Game prompt on game-over (checkmate or stalemate) wrapped in `SwingUtilities.invokeLater` to prevent freezing.
-- Bot thinking runs on a background thread to keep the UI responsive; board is frozen from a snapshot during calculation.
-- Pawn promotion dialog (Queen, Rook, Bishop, Knight).
-- Castling (both kingside and queenside) fully implemented and validated.
-
-### 1.4 Modifications Since Proposal / Interim Stage
-- Implemented **Undo** using the **Memento Design Pattern**, ensuring exact state restoration (including `isMoved` flags) via `clonePiece()`.
-- Added **Tabular Algebraic Move Logging** and visual **Board Coordinates**.
-- Added **Surrender** and **New Game** functionalities.
-- Fixed critical Java Swing UI thread blocking issues by wrapping end-game dialogs in `SwingUtilities.invokeLater()`.
-- Optimized bot searches by dropping `AmateurBot` depth to 5, pre-caching `whiteKingSquare` and `blackKingSquare` for O(1) lookups, and reusing internal logic objects in the `Queen` class.
+### 1.2 Modifications Since the Interim Stage
+At the interim stage, the AI subsystem was incomplete and the UI rendered pieces as text labels. Since then:
+- **BeginnerBot** and **AmateurBot** were implemented using Minimax with Alpha-Beta pruning.
+- **IntermediateBot** and **HardBot** added Piece-Square Table evaluation and Quiescence Search for tactical stability.
+- **En Passant** was implemented using `Board.enPassantTarget`.
+- **Undo system** was added through the Memento pattern using stacked `GameState` snapshots.
+- **UI upgraded** to PNG-based rendering with a tabular algebraic move log.
+- **Bot threading:** computation runs on a background thread; a `pieceSnapshot[][]` is captured before search so `drawPiecesFromSnapshot()` renders a stable board during calculation.
+- **End-game dialogs** wrapped in `SwingUtilities.invokeLater()` to prevent EDT blocking.
+- **King positions** cached as `whiteKingSquare` / `blackKingSquare` for O(1) access.
+- **ChessBot interface** allows runtime difficulty switching without modifying the UI layer.
 
 ---
 
-## 2. System Requirements and Specifications
+## 2. Objectives & Features
 
-### 2.1 Core Functionalities
+### 2.1 Project Objectives
+- **Primary:** Develop a fully functional, rule-complete chess game in Java using a Swing GUI.
+- **Secondary:** Implement AI opponents with progressively advanced search and evaluation techniques.
+- **Scope:** All standard chess rules — legal movement, check/checkmate/stalemate detection, castling, en passant, and pawn promotion.
+
+### 2.2 Game Modes and Bot Difficulty
+
+| Bot Level | Depth | Evaluation | Special |
+|---|---|---|---|
+| BeginnerBot | 3 | Material only | — |
+| AmateurBot | 5 | Material only | — |
+| IntermediateBot | 6 | Material + Piece-Square Tables (12 tables) | PST delta in move ordering |
+| HardBot | 6 | Material + Piece-Square Tables | + Quiescence Search |
+
+- Two game modes: **Human vs. Human** (local) and **Human vs. Bot** (single-player).
+
+### 2.3 Key Features and Functionalities
+- Interactive 8×8 graphical chess board with **drag-and-drop** movement.
+- **Legal move highlighting** on selected pieces.
+- **Algebraic move logging** in a tabular UI panel.
+- **Undo** functionality — Memento-based; reverts both human and bot moves in single-player.
+- **Surrender** and **New Game** controls.
+- **Bot computation on background thread** — UI stays responsive; board renders from snapshot during AI search.
+- **Castling** (kingside and queenside) fully validated per FIDE rules.
+- **Pawn promotion** — human chooses via dialog; bot auto-promotes to Queen.
+- **En Passant** — tracked via `Board.enPassantTarget`, validated in `Pawn.isValidMove()` with strict colour checks.
+- **Game-over dialogs** wrapped in `SwingUtilities.invokeLater()` to prevent EDT freezing.
+
+### 2.4 Core Functionalities Summary
+
 | Feature | Description |
 |---|---|
-| Legal move validation | Each piece class implements `isValidMove()` independently |
-| Check detection | `Board.isChecked()` iterates active pieces to detect attacks on king |
-| Move simulation | `Board.willMoveResultInCheck()` temporarily simulates a move to validate legality |
-| Checkmate / Stalemate | `Board.isCheckmate()` / `Board.isStalemate()` combine check and legal-move detection |
-| Castling | `King.isCastlingMove()` + `King.isValidCastle()` enforce all FIDE castling rules |
-| En Passant | Tracked via `Board.enPassantTarget`; validated in `Pawn.isValidMove()` with strict color checks |
-| Pawn Promotion | Detected on piece placement; player selects promoted piece via dialog; bot auto-promotes to Queen |
-| Bot AI | Four bots (`BeginnerBot`, `AmateurBot`, `IntermediateBot`, `HardBot`) implement `ChessBot` interface via Minimax + Alpha-Beta |
-| Undo | `Stack<GameState>` stores deep-copied board snapshots via Memento Pattern; pops 1 or 2 states |
-| Move Logging | Algebraic notation generated in `getChessNotation()` and appended sequentially to a tabular UI |
-
-### 2.2 User Requirements and Expected Behaviors
-- Player selects game mode (1-player / 2-player) and optionally bot difficulty at startup.
-- Pieces respond to drag-and-drop mouse events; invalid moves are silently rejected or shown as alerts.
-- Check alert is displayed as a `JOptionPane` message.
-- Bot moves are made automatically after the human's move; a 600 ms artificial delay provides feedback.
-
-### 2.3 Performance, Usability, and Scalability
-- The game must remain responsive while the bot thinks (background thread via `new Thread()`).
-- UI repaints are suppressed during bot calculation to prevent flicker (board snapshot pattern).
-- The active-piece list (`activePieceCoords[]` / `boardToIndex[]`) optimizes piece iteration from O(64) to O(n) where n ≤ 32.
-- Deeper search depths (Intermediate / Hard) may introduce noticeable think time; this is a known trade-off.
+| `isValidMove()` | Each piece class implements its own movement rules |
+| `Board.isChecked()` | Detects attacks on the King using the active piece list |
+| `willMoveResultInCheck()` | Simulates a move to reject illegal positions |
+| `isCheckmate()` / `isStalemate()` | Combines check detection with legal move generation |
+| `King.isValidCastle()` | Validates all FIDE castling conditions |
+| En Passant | Tracked via `Board.enPassantTarget`, validated in `Pawn.isValidMove()` |
+| Pawn promotion | Human players choose via dialog; bots auto-promote to Queen |
+| BeginnerBot / AmateurBot | Minimax + Alpha-Beta at depths 3/5 with material evaluation |
+| IntermediateBot / HardBot | Depth-6 Minimax with PST evaluation; HardBot adds Quiescence Search |
+| `Stack<GameState>` | Stores deep-copied board snapshots for Undo |
+| `getChessNotation()` | Generates algebraic notation for the move log |
 
 ---
 
-## 3. System Design and Architecture
+## 3. System Architecture
 
-### 3.1 High-Level Architecture and Module Organization
+### 3.1 High-Level Architecture and Module Organisation
+The system is divided into **backend** and **frontend** layers:
+- **Backend:** board state, move validation, game-state detection, turn management, AI computation.
+- **Frontend:** rendering and mouse interaction.
+- Communication between layers is coordinated through `GameController`; the UI never directly modifies board state.
 
 ```
 ChessBoardUI (View + Controller)
@@ -87,7 +98,7 @@ ChessBoardUI (View + Controller)
     │     ├── AmateurBot (depth 5, material only)
     │     ├── IntermediateBot (depth 6, material + PSTs)
     │     └── HardBot (depth 6, material + PSTs + QS)
-    └── Piece Hierarchy (Abstract Classes + Concrete)
+    └── Piece Hierarchy (Abstract + Concrete)
           ├── Piece (abstract)
           │     ├── King
           │     ├── Queen
@@ -100,136 +111,129 @@ ChessBoardUI (View + Controller)
     Square (data class)
 ```
 
-### 3.2 Diagrams
+### 3.2 OOP Concepts Applied
 
-> **[Insert UML Class Diagram here]**  
-> Key relationships to show:
-> - `ChessBoardUI` has-a `Board`, `GameController`, `ChessBot`
-> - `Board` has-a `Square[][]`
-> - `Square` has-a `Piece` (nullable)
-> - `Piece` ← `King`, `Queen`, `Rook`, `Bishop`, `Knight`, `Pawn` (inheritance)
-> - `ChessBot` ← `BeginnerBot`, `AmateurBot`, `IntermediateBot`, `HardBot` (interface implementation)
+#### Abstraction
+- `Piece` (abstract class) hides movement implementation details — the engine only knows pieces can validate moves and clone themselves.
+- `ChessBot` (interface) hides the entire AI algorithm — the game only interacts with `getBestMove()`.
 
-> **[Insert Sequence Diagram: Human Move Flow]**  
-> `MouseInputListener.mouseReleased()` → `ChessBoardUI.tryMove()` → `Board.willMoveResultInCheck()` → `Board.isCheckmate()` → `triggerBot()` → background `Thread` → `executeBotMove()`
+#### Inheritance
+- All six piece types (`King`, `Queen`, `Rook`, `Bishop`, `Knight`, `Pawn`) extend the abstract class `Piece`.
+- Shared behaviour (`isWhite`, `isMoved`, `setMoved`) is inherited; movement rules are overridden.
 
-### 3.3 OOP Concepts, Main Classes, Responsibilities, and Interactions
+#### Polymorphism
+- `Piece.isValidMove()` is declared abstract — each subclass provides its own implementation.
+- `ChessBoardUI` calls `piece.isValidMove(board, start, end)` uniformly for any piece type.
+- `ChessBot` interface: `activeBot.getBestMove(board, isWhite)` works for any bot implementation.
+
+#### Encapsulation
+- `Square` stores coordinates, board colour, and a nullable `Piece` reference through controlled access methods.
+- `Board` wraps the `Square[][]` structure and exposes controlled operations for move execution and simulation.
+
+#### Memento Pattern (Design Pattern)
+- Implemented via `GameState` inner class to snapshot board state, active pieces, and turn information.
+- Used for the Undo system by restoring deep-copied `Piece` arrays via `clonePiece()`.
+
+### 3.3 Class Summary
 
 | Class / Interface | Type | Responsibility |
 |---|---|---|
-| `Piece` | Abstract Class | Defines the contract for all chess pieces (`isValidMove`, `clonePiece`, `isMoved`) |
-| `King`, `Queen`, `Rook`, `Bishop`, `Knight`, `Pawn` | Concrete Classes | Implement piece-specific movement rules and `clonePiece()` |
-| `Board` | Class | Manages the 8×8 grid, active piece index, check/checkmate/stalemate detection, and move simulation |
-| `Square` | Class | Represents a single board cell; holds color, coordinates, and an optional `Piece` reference |
-| `GameController` | Class | Tracks whose turn it is and game mode settings (single/multiplayer, bot depth, Quiescence Search flag) |
-| `ChessBot` | Interface | Defines `getBestMove(Board, boolean)` — the only method the UI needs to call on any AI |
-| `BeginnerBot` | Class (implements `ChessBot`) | Minimax + Alpha-Beta at depth 3; material-only evaluation |
-| `AmateurBot` | Class (implements `ChessBot`) | Minimax + Alpha-Beta at depth 5; material-only evaluation |
-| `IntermediateBot` | Class (implements `ChessBot`) | Minimax + Alpha-Beta at depth 6; material + Piece-Square Table positional evaluation |
-| `HardBot` | Class (implements `ChessBot`) | Minimax + Alpha-Beta at depth 6; material + PSTs + Quiescence Search for tactical accuracy |
-| `MoveHelper` | Static Utility Class | Reusable helper for `isInCheck`, `willMoveResultInCheck`, `hasLegalMoves`, `isCheckmate`, `isStalemate` |
-| `MouseInputListener` | Class (implements `MouseListener`, `MouseMotionListener`) | Translates pixel coordinates into board coordinates and dispatches drag events |
-| `ChessBoardUI` | Class (extends `JFrame`) | Main view — renders the board, pieces, highlights; orchestrates game loop |
-| `Move` | Data Class | Encapsulates a move (startRow, startCol, endRow, endCol, capturedPiece, isPromotion) |
-| `GameState` | Inner Class | Snapshot of board + turn state for undo operations; stored in a `Stack<GameState>` |
+| `Piece` | Abstract Class | Shared piece state and movement contract |
+| `King`, `Queen`, `Rook`, `Bishop`, `Knight`, `Pawn` | Concrete Classes | Piece-specific movement and deep-copy logic |
+| `Board` | Class | Board state, simulation, game-state detection, en passant tracking |
+| `Square` | Class | Single board cell with coordinates and piece reference |
+| `GameController` | Class | Turn tracking and game configuration |
+| `ChessBot` | Interface | Defines `getBestMove()` |
+| `BeginnerBot` / `AmateurBot` | Classes | Material-based Minimax + Alpha-Beta bots |
+| `IntermediateBot` / `HardBot` | Classes | Positional Minimax bots using PSTs; HardBot adds Quiescence Search |
+| `MoveHelper` | Utility Class | Check detection and move simulation helpers |
+| `Move` | Data Class | Stores move-related data |
+| `GameState` | Inner Class | Undo snapshot stored in a `Stack` |
+| `ChessBoardUI` | Class | Main rendering and game-loop controller |
+| `MouseInputListener` | Class | Mouse event translation and drag handling |
+| `TestRunner` | Class | Standalone move-validation tests |
 
----
+### 3.4 Data Structures
 
-## 4. Data Structures and Algorithms
-
-### 4.1 Selected Data Structures and Reasons
-
-| Data Structure | Where Used | Reason |
+| Data Structure | Where Used | Benefit |
 |---|---|---|
-| `Square[8][8]` (2D Array) | `Board` | O(1) random access to any cell by (row, col) |
-| `Square` references | `Board` | Direct King tracking (`whiteKingSquare`, `blackKingSquare`) for O(1) checks |
-| `int[] activePieceCoords` (size 33) | `Board` | Compact flat list of occupied squares; avoids scanning all 64 cells during check detection |
-| `int[] boardToIndex` (size 64) | `Board` | Reverse-mapping from board position to index in `activePieceCoords`; enables O(1) removal |
-| `Stack<GameState>` | `ChessBoardUI` | LIFO structure for undo (Memento Pattern) — naturally supports multiple undo levels |
-| `List<Move>` (ArrayList) | All bot classes | Dynamic list of legal moves generated per search node |
-| `Map<String, BufferedImage>` (HashMap) | `ChessBoardUI` | Key-value lookup for piece images (e.g., `"White King"`) — O(1) retrieval during paint |
-| `int[][] PIECE_OPENING / PIECE_ENDGAME` (2D Arrays) | `IntermediateBot`, `HardBot` | Piece-Square Tables: 8×8 bonus/penalty grids for positional evaluation; O(1) lookup per piece |
+| `Square[8][8]` (2D Array) | `Board` | O(1) access by (row, col), naturally maps to chess coordinates |
+| `Square` references (`whiteKingSquare`, etc.) | `Board` | O(1) King location lookup instead of scanning |
+| `int[] activePieceCoords` (size 33) | `Board` | O(n) iteration (n ≤ 32), avoids scanning all 64 cells |
+| `int[] boardToIndex` (size 64) | `Board` | O(1) piece removal (swap-and-decrement) |
+| `Stack<GameState>` | `ChessBoardUI` | Natural LIFO for move history (Memento Pattern) |
+| `List<Move>` (ArrayList) | All bot classes | Dynamic list of legal moves per search node |
+| `Map<String, BufferedImage>` (HashMap) | `ChessBoardUI` | O(1) piece image lookup during paint |
+| `int[][] PIECE_OPENING / PIECE_ENDGAME` | `IntermediateBot`, `HardBot` | Piece-Square Tables: O(1) positional lookup per piece |
 
-### 4.2 Time and Space Complexity
+### 3.5 Algorithms
+
+#### Minimax with Alpha-Beta Pruning
+- Used by all four bot classes.
+- White = maximising player; Black = minimising player.
+- Alpha-Beta pruning: branches are cut when β ≤ α, reducing worst-case O(b^d) to best-case O(b^(d/2)).
+
+#### Move Ordering (MVV-LVA)
+- Promotions: +8000
+- Captures: `10 × victim_value − attacker_value`
+- Quiet moves: 0
+- IntermediateBot / HardBot: adds **PST delta** (`toBonus − fromBonus`) to move score for positional ordering.
+
+#### Board Evaluation
+- **Material only** (BeginnerBot, AmateurBot): `Σ pieceValue` (Queen=900, Rook=500, Bishop=300, Knight=300, Pawn=100).
+- **Material + PSTs** (IntermediateBot, HardBot): extends with Piece-Square Tables — 12 tables total (6 piece types × 2 phases: opening/middlegame and endgame).
+- Game phase detection: `activePieceCount ≤ 18` triggers endgame tables (O(1) check).
+- For Black pieces, positional bonuses are mirrored using `row = 7 − r`.
+
+#### Piece-Square Table Principles
+- **Pawns:** Centre advance rewarded; passive wing pawns penalised. Endgame: uniform forward progress encouraged.
+- **Knights:** "Knight on the rim is dim" — edge penalised up to −50; centre rewarded up to +20.
+- **Bishops:** Long diagonals and fianchetto squares rewarded; corners penalised.
+- **Rooks:** 7th rank heavily rewarded; back rank d/e files slightly preferred.
+- **Queen:** Penalised for early development; centre preferred in middlegame.
+- **King (Opening):** Must hide — castled positions +30; centre heavily penalised −50.
+- **King (Endgame):** Must march to centre — centre squares +40.
+
+#### Quiescence Search (HardBot only)
+- Eliminates the **horizon effect** where Minimax stops evaluation before a decisive capture sequence.
+- At depth 0, `quiescenceSearch()` continues searching captures and promotions until the position is tactically stable.
+- Uses a **stand-pat** score as baseline; Alpha-Beta pruning applied throughout.
+
+### 3.6 Time and Space Complexity
 
 | Operation | Complexity | Notes |
 |---|---|---|
 | Check detection (`isChecked`) | O(n) | Iterates active piece list (n ≤ 32) |
-| Legal move generation | O(n × 64) ≈ O(n) | For each of n active pieces, scans all 64 squares |
-| Move simulation (`willMoveResultInCheck`) | O(n) | Temporarily moves a piece and calls `isChecked` |
-| Minimax (depth d, branching b) | O(b^d) worst case | Alpha-Beta pruning reduces to O(b^(d/2)) best case |
-| Active-piece removal | O(1) | Swap-and-decrement pattern with `boardToIndex` reverse map |
-| Undo | O(64) = O(1) | Restores the 8×8 board array from deep-copied snapshot |
-| PST positional lookup | O(1) per piece | Simple 2D array index: `table[tableRow][col]` |
-| Evaluation with PSTs | O(n) | Same as material evaluation, but adds positional bonus per piece |
+| Legal move generation | O(n × 64) | Each active piece evaluates all destination squares |
+| Move simulation (`willMoveResultInCheck`) | O(n) | Temporary mutation + `isChecked` |
+| Minimax (depth d, branching b) | O(b^d) worst | Alpha-Beta: O(b^(d/2)) best case |
+| Active piece removal | O(1) | Swap-and-decrement with reverse map |
+| Undo restoration | O(64) | Restores full board snapshot |
+| PST lookup | O(1) per piece | Direct 2D array index |
+| PST evaluation | O(n) | Added during material traversal |
 
-### 4.3 Algorithms Implemented
-
-#### Minimax with Alpha-Beta Pruning
-- Implemented in all four bot classes (`BeginnerBot`, `AmateurBot`, `IntermediateBot`, `HardBot`).
-- **White** is the maximizing player; **Black** is the minimizing player.
-- `alpha` = best score the maximizer can guarantee; `beta` = best score the minimizer can guarantee.
-- A branch is pruned when `beta ≤ alpha`.
-
-#### Move Ordering (for Alpha-Beta Efficiency)
-- `scoreMove()` assigns a priority to each move:
-  - Promotions: +8000
-  - Captures: `10 × victim_value − attacker_value` (Most Valuable Victim – Least Valuable Attacker heuristic)
-  - Quiet moves: 0
-  - `IntermediateBot` and `HardBot` additionally add the **PST delta** (`toBonus − fromBonus`) to the move score, improving ordering for positional moves.
-- Legal moves are sorted in descending order before search, improving pruning cutoffs.
-
-#### Board Evaluation
-- **Material Evaluation** (`BeginnerBot`, `AmateurBot`): `evaluateBoard()` returns material balance: `+pieceValue` for white pieces, `−pieceValue` for black pieces.
-- Piece values: Queen=900, Rook=500, Bishop=300, Knight=300, Pawn=100.
-- **Positional Evaluation** (`IntermediateBot`, `HardBot`): extends material evaluation with **Piece-Square Tables** (see below).
-
-#### Piece-Square Tables (Positional Heuristics)
-- Used by `IntermediateBot` and `HardBot` to evaluate piece placement quality beyond raw material.
-- Each piece type has **two** 8×8 bonus/penalty grids: one for **opening/middlegame** and one for **endgame**.
-- Total: **12 tables** (6 piece types × 2 game phases).
-- **Key positional principles encoded:**
-  - **Pawns:** Center advance rewarded (d4/e4 = +25); passive wing pawns penalized. In endgame, all forward progress is rewarded uniformly to encourage promotion.
-  - **Knights:** "Knight on the rim is dim" — edge squares penalized up to −50; center squares (d4/e4) rewarded up to +20.
-  - **Bishops:** Long diagonal positions and fianchetto squares rewarded; corners penalized.
-  - **Rooks:** 7th rank (controlling enemy pawns) heavily rewarded (+10); back rank d/e files slightly preferred.
-  - **Queen:** Penalized for early development (to avoid premature queen excursions); center squares preferred in middlegame.
-  - **King (Opening):** Must hide — castled positions (g1/c1) score +30; center is heavily penalized (−50). This is the most impactful table.
-  - **King (Endgame):** Must march to center — center squares now score +40 (active king wins endgames).
-- **Game Phase Detection:** `activePieceCount ≤ 18` triggers endgame tables automatically (O(1) check; 18 = 2 kings + 16 pawns, fires when all major/minor pieces are traded).
-- **Evaluation Formula:** `score = Σ (materialValue + positionalBonus)` — White scores are positive, Black scores are negative. The positional bonus is mirrored for Black: `tableRow = row` for White, `tableRow = 7 − row` for Black.
-
-#### Quiescence Search (Tactical Stability)
-- Used exclusively by `HardBot` to eliminate the **horizon effect** — where Minimax stops evaluating at a fixed depth right before a decisive capture sequence.
-- When Minimax reaches depth 0, instead of returning the static evaluation, it calls `quiescenceSearch()` which continues searching through all **captures and promotions** until the position is "quiet" (no more tactical exchanges).
-- Uses the **stand-pat** score as a baseline: if the current static evaluation is already good enough, the search can stop early (avoids searching hopeless lines).
-- Alpha-Beta pruning is fully applied within the quiescence search for efficiency.
-- This prevents the bot from making moves that look good at the search horizon but lead to immediate material loss (e.g., capturing a pawn right before the queen gets taken).
-
-### 4.4 Trade-offs and Optimization Decisions
-- **Positional Heuristics vs. Speed**: `BeginnerBot` and `AmateurBot` use material-only evaluation to remain extremely fast. `Intermediate` and `Hard` bots utilize **Piece-Square Tables** for advanced positional awareness, trading calculation speed for much stronger strategic play.
-- **Active piece list** avoids O(64) full-board scans during check detection and bot evaluation; instead O(n) where n ≤ 32.
-- **Board snapshot before bot calculation** prevents mid-simulation mutations from flickering on screen — a clean separation between the AI simulation state and display state.
+### 3.7 Trade-offs and Optimisation Decisions
+- BeginnerBot / AmateurBot use material-only evaluation for speed at lower depths.
+- IntermediateBot / HardBot extend with PSTs for stronger positional play, trading speed for strategic quality.
+- HardBot adds Quiescence Search, which may increase search time considerably in tactical positions.
+- Active piece list avoids O(64) full-board scans.
+- Board snapshot prevents flickering during AI search — clean separation between simulation and display state.
+- Minimax uses a **make/undo simulation pattern** rather than cloning the entire board at every node, reducing temporary object allocation and garbage-collection pauses.
 
 ---
 
-## 5. Implementation Details
+## 4. Implementation & Results
 
-### 5.1 Programming Language, Libraries, and Frameworks
+### 4.1 Programming Language, Libraries, and Frameworks
 - **Language:** Java (JDK 11+)
-- **GUI:** Java Swing (`JFrame`, `JPanel`, `JOptionPane`, `JScrollPane`, `JTextArea`)
+- **GUI:** Java Swing (`JFrame`, `JPanel`, `JOptionPane`, `JScrollPane`, `Graphics2D`)
 - **Image I/O:** `javax.imageio.ImageIO` for loading PNG piece images
 - **Threading:** `java.lang.Thread` for background bot computation + `SwingUtilities.invokeLater()` for EDT-safe UI updates
+- **No external libraries** — standard Java SE only.
+- Compilable directly with `javac` and `java`.
 
-### 5.2 Important Implementation Details
-- **Drag-and-drop:** `MouseInputListener` captures `mousePressed` (set `dragFrom`) and `mouseReleased` (call `tryMove`). Mouse-motion events trigger `refresh()` for smooth highlight repaint.
-- **Bot threading model:** When the bot's turn starts, `botThinking = true` is set, a visual board snapshot is captured into `pieceSnapshot[][]`, and a `new Thread()` is launched. The `BoardPanel.paintComponent()` detects `botThinking` and calls `drawPiecesFromSnapshot()` instead of the live board, ensuring the user never sees the AI's internal simulation mutations flickering on screen. After calculation, `SwingUtilities.invokeLater()` delivers the result to the Event Dispatch Thread safely.
-- **Castling validation:** `King.isValidCastle()` checks: king hasn't moved, rook hasn't moved, no pieces between them, king is not in check, king does not pass through or land on an attacked square.
-- **Undo in single-player:** Since the bot is white, undoing one human move leaves it as the bot's turn again. The undo method pops 2 states (both bot and player moves) and re-triggers the bot.
-- **Pawn promotion:** Detected during move execution by checking if a Pawn reaches row 0 (black) or row 7 (white). The bot auto-promotes to Queen; human is shown a dialog.
-- **En Passant:** The target square is tracked globally via `Board.enPassantTarget` and updated only when a pawn moves exactly two squares. During captures, `willMoveResultInCheck()` and `minimax()` carefully orchestrate the removal and restoration of the captured pawn from a different square than the destination.
+### 4.2 File Structure and Package Organisation
 
-### 5.3 File Structure and Package Organization
 ```
 OOP - Final Project/
 ├── src/
@@ -250,152 +254,138 @@ OOP - Final Project/
 │       ├── ChessBot.java           ← AI interface
 │       ├── BeginnerBot.java        ← Minimax depth-3 AI (material only)
 │       ├── AmateurBot.java         ← Minimax depth-5 AI (material only)
-│       ├── IntermediateBot.java    ← Minimax depth-6 AI (material + PSTs)
+│       ├── IntermediateBot.java     ← Minimax depth-6 AI (material + PSTs)
 │       ├── HardBot.java            ← Minimax depth-6 AI (material + PSTs + QS)
-│       ├── MouseInputListener.java ← Mouse event handler
-│       └── TestRunner.java         ← Standalone move-validation tests
-├── chess pieces/                   ← PNG assets (12 pieces × 2 colors)
-└── documents/                      ← Guidelines + report files
+│       ├── MouseInputListener.java  ← Mouse event handler
+│       └── TestRunner.java          ← Standalone move-validation tests
+├── chess pieces/                    ← PNG assets (12 pieces × 2 colours)
+└── documents/                       ← Guidelines + report files
 ```
 
-### 5.4 External Tools or APIs Used
-- No external libraries beyond the Java SE standard library.
-- Piece images: custom PNG files stored in `chess pieces/` folder, loaded at startup.
+Source code: [GitHub — EnTeeKiu/Chess](https://github.com/EnTeeKiu/Chess)
 
----
+### 4.3 Key Implementation Decisions
+- **`isValidMove()`** is a pure predicate — validates movement rules without modifying board state. All mutations are centralised through `Board.applyMove()` and `Board.undoMove()`.
+- **Drag-and-drop:** `MouseInputListener` computes and highlights legal destinations; on release, submits to `tryMove()` for validation.
+- **Bot threading:** when the bot's turn begins, `botThinking = true`, a snapshot is stored in `pieceSnapshot[][]`, and a background `Thread` runs Minimax. While `botThinking` is true, `paintComponent()` renders through `drawPiecesFromSnapshot()`. On completion, `SwingUtilities.invokeLater()` safely applies the move on the EDT.
+- **Castling:** `King.isValidCastle()` verifies movement history, empty traversal squares, and attacked-square conditions.
+- **Pawn promotion:** detected during move execution; bots auto-promote to Queen; humans choose via dialog.
+- **Surrender:** reuses the same end-game flow as checkmate/stalemate through `promptNewGame()`, avoiding duplicated logic.
+- **AI invocation** is centralised through `triggerBot()`, ensuring consistent behaviour after normal moves and Undo.
+- **En Passant:** target tracked globally via `Board.enPassantTarget`; during captures, `willMoveResultInCheck()` and `minimax()` orchestrate removal/restoration of the captured pawn from a different square than the destination.
 
-## 6. Testing and Evaluation
+### 4.4 Testing and Evaluation
 
-### 6.1 Test Cases and Testing Methodology
-- **`TestRunner.java`** provides unit-style move validation tests by setting up specific board positions and calling `piece.isValidMove()` directly.
-- Manual play-testing for:
-  - Checkmate scenarios (Fool's Mate, Scholar's Mate)
-  - Stalemate detection
-  - Castling (both sides, with and without blocking pieces / check)
-  - Pawn promotion
-  - Undo after bot move
+#### Test Methodology
+- **Unit tests:** `TestRunner.java` validates `isValidMove()` for each piece type in isolation.
+- **System tests:** Full match scenarios (Fool's Mate, Scholar's Mate, stalemate, castling, pawn promotion, Undo, all AI levels).
 
-| Test Case | Expected Result | Observed Result |
+#### Backend Validation Results
+
+| Test Case | Expected | Status |
 |---|---|---|
-| White Pawn forward 1 square | `true` | ✅ |
-| White Pawn backward | `false` | ✅ |
-| Rook blocked by own piece | `false` | ✅ |
-| Knight L-shape | `true` | ✅ |
-| Bishop diagonal through empty | `true` | ✅ |
-| King into check | Move rejected | ✅ |
-| Kingside castling (valid) | `O-O` logged | ✅ |
-| Queenside castling through attacked square | `false` | ✅ |
-| Checkmate detection | Game-over dialog shown | ✅ |
-| Stalemate detection | Draw dialog shown | ✅ |
-| Pawn promotion to Queen | Piece replaced on board | ✅ |
-| Undo in 2-player | Previous position restored | ✅ |
-| Undo in single-player | Bot + player move reversed | ✅ |
+| Pawn forward movement | Valid | ✅ Pass |
+| Pawn backward movement | Invalid | ✅ Pass |
+| Blocked rook movement | Invalid | ✅ Pass |
+| Knight L-shape movement | Valid | ✅ Pass |
+| Bishop diagonal movement | Valid | ✅ Pass |
+| King moving into check | Rejected | ✅ Pass |
+| Valid kingside castling | Allowed | ✅ Pass |
+| Castling through check | Rejected | ✅ Pass |
+| Checkmate detection | Detected | ✅ Pass |
+| Stalemate detection | Detected | ✅ Pass |
+| Pawn promotion | Success | ✅ Pass |
+| Undo restoration (2-player) | Restored | ✅ Pass |
+| Undo restoration (single-player) | Restored | ✅ Pass |
 
-### 6.2 Screenshots / Sample Outputs
-> **[Insert screenshots here:]**
-> - Opening board with difficulty menu
-> - Mid-game with legal move highlights
-> - Check alert dialog
-> - Pawn promotion dialog
-> - Checkmate / game-over dialog
-> - Move log showing algebraic notation
+#### Discussion of Correctness, Robustness, and Usability
+- All standard chess rules within the project scope were validated.
+- The Undo system restores board state safely because each `GameState` stores deep-copied snapshots through `clonePiece()`.
+- The UI remains responsive during AI computation due to the background threading model.
+- Legal move highlighting improves usability; algebraic move log provides complete gameplay history.
 
-### 6.3 Performance Evaluation
-- Beginner bot (depth 3, material only): responds in < 1 second on most positions.
-- Amateur bot (depth 5, material only): responds in 1–5 seconds depending on position complexity.
-- Intermediate bot (depth 6, material + PSTs): responds in 3–10 seconds depending on position complexity. *(Fill in actual measured times.)*
-- Hard bot (depth 6, material + PSTs + Quiescence Search): may take 5–15+ seconds in tactical positions due to extended capture search at leaf nodes. *(Fill in actual measured times.)*
+#### Performance Evaluation
 
-### 6.4 Discussion of Correctness, Robustness, and Usability
-- All standard chess rules are correctly implemented and tested.
-- The undo system fully restores board state without memory leaks (deep copies via `clonePiece()`).
-- The UI remains responsive at all difficulty levels due to the background threading model.
-- Usability: the highlighting system clearly communicates legal moves; the move log provides a record of the game.
-
----
-
-## 7. Challenges and Solutions
-
-### 7.1 Technical Difficulties
-- **Check detection during simulation:** Simulating a move requires temporarily mutating the board; failing to correctly revert state caused cascading bugs. **Solution:** Strict save-and-restore pattern in `willMoveResultInCheck()`.
-- **Bot causing piece flicker:** The bot's Minimax simulation mutates the board object shared with the UI, causing pieces to appear to teleport during calculation. **Solution:** Board snapshot taken before bot starts; UI renders from snapshot while `botThinking = true`.
-- **UI thread blocking on checkmate popups:** The `JOptionPane` for checkmate/surrender was blocking the Java Swing EDT, causing the final graphical board state repaint to freeze before showing the popup. **Solution:** Wrapped end-game dialogs entirely in `SwingUtilities.invokeLater()`.
-- **Castling edge cases:** Multiple FIDE conditions (king not in check, cannot pass through attacked square) required careful sequential validation. **Solution:** `isValidCastle()` with explicit checks for each condition.
-- **Active piece index management:** Removing a piece mid-list without shifting was non-trivial. **Solution:** Swap-and-decrement with the `boardToIndex[]` reverse map.
-- **Minimax State Corruption (The Ghost Pawn Bug):** Managing ephemeral En Passant target squares during recursive Minimax search triggered a critical flaw where pawns could capture their own color's "ghosts". Combined with an uninitialized array index default, this caused the internal `activePieceCoords` array to silently corrupt and overflow, crashing the simulation thread and triggering false stalemates. **Solution:** Enforced strict color validation for En Passant captures (`epPawn.isWhite() != this.isWhite()`) and ensured `boardToIndex` safely defaults to `-1` for empty squares, perfectly preserving array length during deep recursive simulations.
-
-### 7.2 Design or Architectural Issues
-- **Bot code duplication:** `BeginnerBot` and `AmateurBot` share identical Minimax logic differing only in depth. **Future improvement:** Extract a single configurable `MinimaxBot` class.
-- **God class risk:** `ChessBoardUI` handles both rendering and game logic. **Partial mitigation:** `MoveHelper` offloads static logic; `GameController` handles turn state.
-
-### 7.3 Team Collaboration and Task Coordination
-- *(Describe how tasks were divided — e.g., who implemented which piece classes, who built the bot, who built the UI, who wrote tests.)*
-
-### 7.4 Solutions Implemented and Lessons Learned
-- Early and frequent play-testing caught rule violations before they became deeply embedded.
-- Using an interface (`ChessBot`) for the AI made it trivial to swap difficulty levels at runtime.
-- Background threading requires discipline: all UI mutations must go through `SwingUtilities.invokeLater()`.
-
----
-
-## 8. Conclusion and Limitations
-
-### 8.1 Overall Achievements and Completed Objectives
-- A fully playable, rule-complete Java chess game with Swing GUI was delivered.
-- Two AI bots (Beginner, Amateur) plus two higher-difficulty options (Intermediate, Hard) were implemented.
-- All major chess features (castling, promotion, check/checkmate/stalemate, undo, move log) are functional.
-
-### 8.2 Strengths of the Developed System
-- Clean OOP hierarchy: polymorphism via `Piece` abstract class lets the engine handle any piece uniformly.
-- Efficient board representation using active piece list — minimizes unnecessary computation.
-- Responsive UI through proper threading and board snapshot design.
-- Extensible bot architecture: new difficulty levels can be added by implementing `ChessBot`.
-
-### 8.3 Current Limitations or Unresolved Issues
-- **Draw by repetition** and **50-move rule** are not enforced.
-- `BeginnerBot` and `AmateurBot` share nearly identical code (only differ in `SEARCH_DEPTH`).
-- No persistent game save / load functionality.
-
-### 8.4 Possible Future Improvements or Extensions
-- Implement the 50-move / threefold repetition draw rules.
-- Refactor bots into a single `MinimaxBot(depth, useQS, usePositional)` class.
-- Implement Quiescence Search for all difficulty levels.
-- Add a proper opening book for the early game.
-- Implement networked multiplayer.
-- Add a game timer / clock.
-
----
-
-## 9. Team Contributions
-
-| Team Member | Contributions |
+| Difficulty | Think Time |
 |---|---|
-| *(Name 1)* | *(e.g., Board model, check/checkmate/stalemate logic, active piece index)* |
-| *(Name 2)* | *(e.g., Piece hierarchy, movement validation, castling, pawn promotion)* |
-| *(Name 3)* | *(e.g., ChessBoardUI, drag-and-drop, move log, undo system, bot threading)* |
-| *(Name 4)* | *(e.g., BeginnerBot, AmateurBot, Minimax + Alpha-Beta, move ordering, evaluation)* |
+| BeginnerBot (depth 3, material) | < 1 second |
+| AmateurBot (depth 5, material) | 1–5 seconds |
+| IntermediateBot (depth 6, material + PSTs) | 3–10 seconds |
+| HardBot (depth 6, material + PSTs + QS) | 5–15+ seconds (tactical positions) |
+
+No crashes, deadlocks, or invalid game-state transitions were observed during repeated gameplay sessions across all difficulty levels.
+
+#### Undo via the Memento Pattern
+- After each committed move, the system stores a complete `GameState` snapshot containing deep copies of the board and pieces.
+- **Single-player:** Undo restores both the human move and the bot response by popping two states from the stack.
+- **Multiplayer:** Only one state is restored per action.
+- Storing complete snapshots simplifies restoration and guarantees correctness even for complex moves such as castling.
 
 ---
 
-## 10. References
+## 5. Challenges
 
-- Knuth, D. E., & Moore, R. W. (1975). An analysis of alpha-beta pruning. *Artificial Intelligence*, 6(4), 293–326.
-- Oracle. (2024). *Java SE 11 API Documentation*. https://docs.oracle.com/en/java/docs/
-- Wikipedia. (2024). *Minimax algorithm*. https://en.wikipedia.org/wiki/Minimax
-- Wikipedia. (2024). *Alpha-beta pruning*. https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
-- Wikipedia. (2024). *Chess rules (FIDE Laws of Chess)*. https://www.fide.com/FIDE/handbook/LawsOfChess.pdf
-- Chessprogramming Wiki. (2024). *Move ordering*. https://www.chessprogramming.org/Move_Ordering
-- *(Add any additional references: libraries, tutorials, GitHub repos, etc.)*
+### 5.1 Technical Difficulties
+
+| Challenge | Description | Solution |
+|---|---|---|
+| **Check detection during simulation** | Early implementations evaluated moves against the live board state rather than the temporary post-simulation state, producing incorrect results during deeper Minimax recursion. | Strict apply-check-restore pattern inside `willMoveResultInCheck()`. |
+| **UI flickering during AI computation** | Minimax mutates the same board object used by the renderer, causing temporary simulation states to appear on screen. | Render from a temporary board snapshot while `botThinking` is active; restore normal rendering once the AI move is delivered through `SwingUtilities.invokeLater()`. |
+| **Castling edge cases** | FIDE rules require simultaneous validation of movement history, path clearance, and attacked squares. | Conditions implemented sequentially inside `King.isValidCastle()`. |
+| **Active piece index management** | Captured pieces must be removed without shifting the entire array. | Swap-and-decrement strategy combined with `boardToIndex[]` reverse map for O(1) removal. |
+| **Minimax State Corruption ("The Ghost Pawn Bug")** | During recursive simulation, improperly scoped En Passant targets allowed pawns to capture their own colour's ghost pieces. Combined with an uninitialised default in `boardToIndex[]`, this corrupted `activePieceCoords[]`, crashed the simulation thread, and triggered false stalemates. | Enforced strict colour validation in `Pawn.isValidMove()` via `epPawn.isWhite() != this.isWhite()`, and initialised `boardToIndex[]` to −1 for empty squares to preserve array bounds. |
+| **UI thread blocking on dialogs** | End-game `JOptionPane` popups blocked the Swing Event Dispatch Thread, causing the final board repaint to freeze. | Wrapped all end-game dialogs in `SwingUtilities.invokeLater()`. |
+
+### 5.2 Design and Architectural Issues
+- **Bot code duplication:** `BeginnerBot` and `AmateurBot` share similar Minimax logic and differ mainly in search depth. **Future fix:** a single configurable implementation parameterised by depth.
+- **God class risk:** `ChessBoardUI` still handles both rendering and portions of gameplay flow. **Partial mitigation:** reusable game-state logic delegated to `MoveHelper`; turn management to `GameController`.
+
+### 5.3 Lessons Learned
+- Frequent play-testing proved essential for detecting rule-validation bugs before they became deeply integrated.
+- The `ChessBot` interface simplified runtime AI replacement and improved extensibility.
+- All interface updates must be dispatched through `SwingUtilities.invokeLater()` to avoid race conditions on the EDT.
 
 ---
 
-## 11. Appendix
+## 6. References
 
-### A. Additional Screenshots
-> *(Insert additional screenshots of gameplay, bot difficulty menu, undo demonstration, etc.)*
+1. Knuth, D.E., & Moore, R.W. (1975). An analysis of alpha-beta pruning. *Artificial Intelligence*, 6(4), 293–326.
+2. Oracle Corporation. (2024). *Java SE 11 API Documentation*. https://docs.oracle.com/en/java/javase/11/
+3. FIDE. (2024). *FIDE Laws of Chess*. https://www.fide.com/FIDE/handbook/LawsOfChess.pdf
+4. Chessprogramming Wiki. (2024). *Move Ordering*. https://www.chessprogramming.org/Move_Ordering
+5. Chessprogramming Wiki. (2024). *Minimax*. https://www.chessprogramming.org/Minimax
+6. Chessprogramming Wiki. (2024). *Alpha-Beta*. https://www.chessprogramming.org/Alpha-Beta
+7. Group 17. (2026). *Chess Plus — Source Code Repository*. https://github.com/EnTeeKiu/Chess
 
-### B. Extended Test Cases
-> *(Insert additional `TestRunner` output, edge-case move validations, etc.)*
+---
 
-### C. Class Diagram (Full)
-> *(Insert full UML class diagram if too large for Section 3.)*
+## Appendix: Team Contributions
+
+| Member | Contributions |
+|---|---|
+| **Nguyen Quy Tu** (Leader) | Project coordination; `GameController` and `Board`; check, checkmate, and stalemate detection; active piece index optimisation; Piece-Square Tables. |
+| **Nguyen Dinh Nam Khanh** | Piece movement validation; sliding-piece path checking; castling validation; pawn promotion logic. |
+| **Nguyen Thien Quang** | UI development; drag-and-drop interaction; move highlighting; move log panel; bot threading and snapshot rendering; Undo and game controls. |
+| **Bui Anh Minh** | System integration; `TestRunner`; debugging and integration-stage issue resolution. |
+| **Nguyen Minh Nghia** | AI subsystem implementation; all four bot classes; Minimax with Alpha-Beta pruning; move ordering; Quiescence Search; Queen logic optimisation. |
+
+---
+
+## Appendix: Conclusion & Future Work
+
+### Achievements
+- Fully rule-complete chess game in Java Swing.
+- Four AI difficulty tiers with progressively advanced heuristics (material → PSTs → Quiescence Search).
+- Clean OOP design: abstract `Piece` hierarchy, `ChessBot` interface for plug-and-play AI, Memento pattern for Undo.
+- Background-threaded AI computation maintained UI responsiveness during Minimax search.
+- Active piece index structure improved move generation and check detection efficiency.
+
+### Current Limitations
+- **Draw by repetition** and **50-move rule** not implemented.
+- **BeginnerBot / AmateurBot** contain partially duplicated Minimax logic.
+
+### Future Improvements
+- Implement remaining chess rules (50-move, threefold repetition).
+- Refactor AI into configurable `MinimaxBot(depth)` implementation.
+- Add opening-book support.
+- Introduce networked multiplayer and game timer functionality.
